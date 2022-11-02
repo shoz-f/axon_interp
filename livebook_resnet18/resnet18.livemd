@@ -1,0 +1,144 @@
+# ResNet18 image classification
+
+```elixir
+File.cd!(__DIR__)
+# for windows JP
+System.shell("chcp 65001")
+
+Mix.install(
+  [
+  {:nx, "~> 0.4.0"},
+  {:exla, "~> 0.4.0"},
+  {:cimg, "~> 0.1.13"},
+  {:axon_interp, path: ".."}
+  {:kino, "~> 0.6.2"},
+  ],
+  system_env: [{"NNINTERP", "Axon"}]
+)
+```
+
+## 0.Original work
+
+torchvision.models.resnet18 -  pre-trained model included in Pytorch.
+
+* https://pytorch.org/vision/main/models/generated/torchvision.models.resnet18.html
+
+convert the model to TorchScript with torch.jit.script().
+
+***Thanks a lot!!!***
+
+---
+
+<!-- livebook:{"break_markdown":true} -->
+
+```python
+import os
+import torch
+import torchvision.models as models
+
+model = models.resnet18(weights='DEFAULT')
+model.eval()
+
+dummy_input = torch.randn(1, 3, 224, 224)
+
+os.makedirs("data", exist_ok=True)
+torch.onnx.export(model,
+   dummy_input,
+   "data/resnet18.onnx",
+   verbose=False,
+   input_names=["input.0"],
+   output_names=["output.0"],
+   export_params=True
+   )
+```
+
+## Implementation with NNInterp in Elixir
+
+## 1.Defining the inference module: ResNet18
+
+* Model<br>
+  r18_scripted.pt: get from "https://github.com/shoz-f/nn-interp/releases/download/0.0.1/r18_scripted.pt" if not existed.
+
+* Pre-processing<br>
+  Resize the input image to the size `{@width, @height}` and gaussian normalize.
+
+* Post-processing<br>
+  Sort outputs and take first item.
+
+```elixir
+defmodule ResNet18 do
+  @width 224
+  @height 224
+
+  use NNInterp,
+    model: "./data/r18_scripted.pt",
+    inputs: [f32: {1, 3, @height, @width}],
+    outputs: [f32: {1, 1000}]
+
+  @imagenet1000 (for item <- File.stream!("./imagenet1000.label") do
+                   String.trim_trailing(item)
+                 end)
+                |> Enum.with_index(&{&2, &1})
+                |> Enum.into(%{})
+
+  def apply(img, top \\ 1) do
+    # preprocess
+    input0 =
+      CImg.builder(img)
+      |> CImg.resize({@width, @height})
+      |> CImg.to_binary([{:gauss, {{123.7, 58.4}, {116.3, 57.1}, {103.5, 57.4}}}, :nchw])
+                        # mean=[0.485, 0.456, 0.406] and std=[0.229, 0.224, 0.225].
+
+    # prediction
+    outputs =
+      session()
+      |> AxonInterp.set_input_tensor(0, input0)
+      |> AxonInterp.invoke()
+      |> AxonInterp.get_output_tensor(0)
+      |> Nx.from_binary(:f32)
+      |> Nx.reshape({1000})
+
+    # postprocess
+    exp = Nx.exp(outputs)
+
+    Nx.divide(exp, Nx.sum(exp))
+    |> Nx.argsort(direction: :desc)
+    |> Nx.slice([0], [top])
+    |> Nx.to_flat_list()
+    |> Enum.map(&@imagenet1000[&1])
+  end
+end
+```
+
+Launch `ResNet18`.
+
+```elixir
+ResNet18.start_link([])
+```
+
+Display the properties of the `ResNet18` model.
+
+```elixir
+AxonInterp.info(ResNet18)
+```
+
+## 3.Let's try it
+
+Load a photo and apply ResNet18 to it.
+
+```elixir
+unless File.exists?("lion.jpg"),
+  do:
+    AxonInterp.Util.download(
+      "https://github.com/shoz-f/nn-interp/releases/download/0.0.1/lion.jpg"
+    )
+
+img = CImg.load("lion.jpg")
+Kino.render(CImg.display_kino(img, :jpeg))
+
+ResNet18.apply(img, 3)
+```
+
+## 4.TIL ;-)
+
+&#9633;
