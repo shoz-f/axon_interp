@@ -24,6 +24,7 @@ defmodule AxonInterp.MixProject do
       {:nx, "~> 0.4.0"},
       {:exla, "~> 0.4.0"},
       {:axon, "~> 0.3.0"},
+      {:axon_onnx, "~> 0.3.0"},
       {:httpoison, "~> 1.8"}
     ]
   end

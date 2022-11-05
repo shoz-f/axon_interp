@@ -5,10 +5,10 @@ defmodule AxonInterp do
 
   # the suffix expected for the model
   suffix = %{
-    "axon" => ".axon"
+    "axon" => [".axon", ".onnx"]
   }
   @model_suffix suffix[String.downcase(@framework)]
-
+  
   # session record
   defstruct module: nil, inputs: %{}, outputs: %{}
 
@@ -26,7 +26,10 @@ defmodule AxonInterp do
         nn_inputs  = Keyword.get(opts, :inputs, [])
         nn_outputs = Keyword.get(opts, :outputs, [])
 
-        {model, params} = File.read!(nn_model) |> Axon.deserialize()
+        {model, params} = case Path.extname(nn_model) do
+          ".axon" -> File.read!(nn_model) |> Axon.deserialize()
+          ".onnx" -> AxonOnnx.import(nn_model)
+        end
         {_, predict_fn} = Axon.build(model, [])
 
         {:ok, %{model: predict_fn, params: params, path: nn_model, itempl: nn_inputs, otempl: nn_outputs}}
@@ -66,30 +69,6 @@ defmodule AxonInterp do
   """
   def framework() do
     @framework
-  end
-
-  @doc """
-  Ensure that the model matches the back-end framework.
-  
-  ## Parameters
-    * model - path of model file
-    * url - download site
-  """
-  def validate_model(nil, _), do: raise "error: need a model file \"#{@model_suffix}\"."
-  def validate_model(model, url) do
-    validate_extname!(model)
-    unless File.exists?(model) do
-      validate_extname!(url)
-      AxonInterp.Util.download(url, Path.dirname(model), Path.basename(model))
-    end
-    model
-  end
-
-  defp validate_extname!(model) do
-    actual = Path.extname(model)
-    unless actual == @model_suffix,
-      do: raise "error: #{@framework} expects the model file \"#{@model_suffix}\" not \"#{actual}\"."
-    :ok
   end
 
   @doc """
@@ -158,5 +137,32 @@ defmodule AxonInterp do
       {:ok, result} -> %AxonInterp{session | outputs: Map.put(outputs, 0, result)}
       any -> any
     end
+  end
+
+  @doc """
+  Ensure that the model matches the back-end framework.
+  
+  ## Parameters
+    * path - path of model file
+    * url - download site
+  """
+  def validate_model(nil, _), do: raise ArgumentError, "need a model file #{inspect(@model_suffix)}."
+  def validate_model(path, url) do
+    path = Path.expand(path)
+
+    actual_ext = validate_extname!(@model_suffix, path)
+    unless File.exists?(path) do
+      validate_extname!([actual_ext], url)
+      AxonInterp.Util.download(url, Path.dirname(path), Path.basename(path))
+    end
+    path
+  end
+
+  defp validate_extname!(exts, path) do
+    actual_ext = Path.extname(path)
+    unless actual_ext in exts,
+      do: raise ArgumentError, "expects the model file #{inspect(exts)} not \"#{actual_ext}\"."
+
+    actual_ext
   end
 end
