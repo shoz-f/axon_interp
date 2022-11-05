@@ -4,6 +4,22 @@ defmodule AxonInterp.Util do
   
   ## Parameters
     * url - url of download site
+    * func -
+  """
+  def download(url, func) when is_function(func) do
+    IO.puts("Downloading \"#{url}\".")
+
+    with {:ok, res} <- HTTPoison.get(url, [], follow_redirect: true) do
+      IO.puts("...processing.")
+      func.(res.body)
+    end
+  end
+
+  @doc """
+  Download the file from url.
+  
+  ## Parameters
+    * url - url of download site
     * path -
     * name -
   """
@@ -11,12 +27,11 @@ defmodule AxonInterp.Util do
     IO.puts("Downloading \"#{url}\".")
 
     with {:ok, res} <- HTTPoison.get(url, [], follow_redirect: true),
-      bin <- res.body,
       {_, <<"attachment; filename=", fname::binary>>} <- List.keyfind(res.headers, "Content-Disposition", 0),
       :ok <- File.mkdir_p(path)
     do
       Path.join(path, name||fname)
-      |> save(bin)
+      |> save(res.body)
     end
   end
 
