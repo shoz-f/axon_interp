@@ -3,7 +3,8 @@ defmodule DemoR18 do
   @height 224
 
   use AxonInterp,
-    model: "./data/resnet18.axon",
+    model: "~/nn_model/resnet18.onnx",
+    url: "https://github.com/shoz-f/axon_interp/releases/download/0.0.1/resnet18.onnx",
     inputs: [f32: {1, 3, @height, @width}],
     outputs: [f32: {1, 1000}]
 
@@ -12,6 +13,13 @@ defmodule DemoR18 do
                  end)
                 |> Enum.with_index(&{&2, &1})
                 |> Enum.into(%{})
+
+#  @imagenet1000 AxonInterp.Util.download("https://github.com/shoz-f/axon_interp/releases/download/0.0.1/imagenet1000.label",
+#                    fn x -> String.split("\n")
+#                      |> Enum.with_index(&{&2, &1})
+#                      |> Enum.into(%{})
+#                    end
+#                  )
 
   def apply(img, top \\ 1) do
     # preprocess
