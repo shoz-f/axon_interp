@@ -101,10 +101,7 @@ end
 Launch `ResNet18`.
 
 ```elixir
-AxonInterp.stop(ResNet18)
-```
-
-```elixir
+# AxonInterp.stop(ResNet18)
 ResNet18.start_link([])
 ```
 
@@ -119,11 +116,11 @@ AxonInterp.info(ResNet18)
 Load a photo and apply ResNet18 to it.
 
 ```elixir
-unless File.exists?("./lion.jpg"),
-  do:
-    AxonInterp.Util.download(
-      "https://github.com/shoz-f/axon_interp/releases/download/0.0.1/lion.jpg"
-    )
+unless File.exists?("./lion.jpg") do
+  AxonInterp.Util.download(
+    "https://github.com/shoz-f/axon_interp/releases/download/0.0.1/lion.jpg"
+  )
+end
 
 img = CImg.load("lion.jpg")
 Kino.render(CImg.display_kino(img, :jpeg))
