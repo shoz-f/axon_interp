@@ -47,14 +47,27 @@ defmodule AxonInterp do
         }
         {:reply, {:ok, info}, state}
       end
-      
+
+      require Nx
+
       def handle_call({:invoke, inputs}, _from, %{model: model, params: params, itempl: template}=state) do
         inputs = Enum.with_index(template)
           |> Enum.map(fn {{dtype, shape}, index} -> Nx.from_binary(inputs[index], dtype) |> Nx.reshape(shape) end)
+          |> case do
+               [single] -> single
+               multiple -> List.to_tuple(multiple)
+             end
 
-        input0 = Enum.at(inputs, 0)
-        result = model.(params, input0) |> Nx.to_binary()
-        {:reply, {:ok, result}, state}
+        results = case model.(params, inputs) do
+          single when Nx.is_tensor(single) ->
+            %{0 => Nx.to_binary(single)}
+          multiple when is_tuple(multiple) ->
+            Tuple.to_list(multiple)
+            |> Enum.with_index()
+            |> Enum.into(%{}, fn {result, index} -> {index, Nx.to_binary(result)} end)
+        end
+        
+        {:reply, {:ok, results}, state}
       end
 
       def terminate(_reason, state) do
@@ -132,9 +145,9 @@ defmodule AxonInterp do
         |> AxonInterp.get_output_tensor(0)
     ```
   """
-  def invoke(%AxonInterp{module: mod, inputs: inputs, outputs: outputs}=session) do
+  def invoke(%AxonInterp{module: mod, inputs: inputs}=session) do
     case GenServer.call(mod, {:invoke, inputs}, @timeout) do
-      {:ok, result} -> %AxonInterp{session | outputs: Map.put(outputs, 0, result)}
+      {:ok, results} -> %AxonInterp{session | outputs: results}
       any -> any
     end
   end
