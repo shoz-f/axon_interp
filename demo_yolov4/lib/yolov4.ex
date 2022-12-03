@@ -10,10 +10,9 @@ defmodule YOLOv4 do
   alias AxonInterp, as: NNInterp
   use NNInterp,
     model: "./model/yolov4_1_3_608_608_static.onnx",
-    url: "https://drive.google.com/uc?authuser=0&export=download&confirm=t&id=1oY9Pv4Q_MfPolG4sRhydf1GGFnv7556c",
+    url: "https://github.com/shoz-f/axon_interp/releases/download/0.0.1/yolov4_1_3_608_608_static.onnx",
     inputs: [f32: {1,3,@width,@height}],
     outputs: [f32: {1,22743,1,4}, f32: {1,22743,80}]
-
 
   def apply(img) do
     # preprocess
