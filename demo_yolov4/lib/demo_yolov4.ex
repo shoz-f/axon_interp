@@ -1,14 +1,13 @@
 defmodule DemoYOLOv4 do
   @palette CImg.Util.rand_palette("./model/coco.label")
 
-  def run(path) when is_binary(path) do
-    run(YOLOv4, CImg.load(path))
-  end
+  def run(path) do
+    img = CImg.load(path)
 
-  def run(yolo, %CImg{}=img) do
-    with {:ok, res} <- yolo.apply(img) do
+    with {:ok, res} <- YOLOv4.apply(img) do
+      IO.inspect(res)
       Enum.reduce(res, CImg.builder(img), &draw_item(&1, &2))
-      |> CImg.save("#{yolo}.jpg")
+      |> CImg.save("ans_#{path}")
     end
   end
 

@@ -8,7 +8,7 @@ defmodule YOLOv4 do
   @height 608
 
   alias AxonInterp, as: NNInterp
-  use NNInterp, label: "./model/coco.label",
+  use NNInterp,
     model: "./model/yolov4_1_3_608_608_static.onnx",
     url: "https://drive.google.com/uc?authuser=0&export=download&confirm=t&id=1oY9Pv4Q_MfPolG4sRhydf1GGFnv7556c",
     inputs: [f32: {1,3,@width,@height}],
@@ -23,23 +23,17 @@ defmodule YOLOv4 do
 
     # prediction
     outputs = session()
-      |> NNInterp.set_input_tensor(0, input0)
+      |> NNInterp.set_input_tensor(0, input0, [:binary])
       |> NNInterp.invoke()
 
     # postprocess
-    boxes  = extract_boxes(outputs)
-    scores = extract_scores(outputs)
+    boxes  = NNInterp.get_output_tensor(outputs, 0, [:binary])
+    scores = NNInterp.get_output_tensor(outputs, 1, [:binary])
 
     PostDNN.non_max_suppression_multi_class(
-      Nx.shape(scores), Nx.to_binary(boxes), Nx.to_binary(scores),
+      {22743,80}, boxes, scores,
       boxrepr: :corner,
       label: "./model/coco.label"
     )
   end
-
-  defp extract_boxes(outputs), do:
-    NNInterp.get_output_tensor(outputs, 0) |> Nx.from_binary(:f32) |> Nx.reshape({:auto, 4})
-
-  defp extract_scores(outputs), do:
-    NNInterp.get_output_tensor(outputs, 1) |> Nx.from_binary(:f32) |> Nx.reshape({:auto, 80})
 end

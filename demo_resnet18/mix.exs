@@ -3,9 +3,9 @@ defmodule DemoR18.MixProject do
 
   def project do
     [
-      app: :demo_r18,
+      app: :demo_resnet18,
       version: "0.1.0",
-      elixir: "~> 1.13",
+      elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -23,10 +23,9 @@ defmodule DemoR18.MixProject do
   defp deps do
     #System.put_env("NNINTERP", "Axon")
     [
-      {:nx, "~> 0.4.0"},
-      {:exla, "~> 0.4.0"},
-      {:cimg, "~> 0.1.13"},
-      {:axon_interp, path: ".."}
+      {:axon_interp, path: ".."},
+      {:cimg, "~> 0.1.14"},
+      {:nx, "~> 0.4.0"}
     ]
   end
 end

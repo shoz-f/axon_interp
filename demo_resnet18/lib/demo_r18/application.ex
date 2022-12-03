@@ -5,7 +5,7 @@ defmodule DemoR18.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      DemoR18
+      Resnet18
     ]
 
     opts = [strategy: :one_for_one, name: DemoR18.Supervisor]
