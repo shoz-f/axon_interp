@@ -58,12 +58,13 @@ defmodule YOLOv4 do
     inputs: [f32: {1, 3, 608, 608}],
     outputs: [f32: {1, 22743, 1, 4}, f32: {1, 22743, 80}]
 
+  @prepro CImg.builder()
+          |> CImg.resize({608, 608})
+          |> CImg.to_binary([{:range, {0.0, 1.0}}, :nchw])
+
   def apply(img) do
     # preprocess
-    input0 =
-      img
-      |> CImg.resize({608, 608})
-      |> CImg.to_binary([{:range, {0.0, 1.0}}, :nchw])
+    input0 = CImg.run(@prepro, img)
 
     # prediction
     outputs =

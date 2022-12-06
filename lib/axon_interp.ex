@@ -91,7 +91,7 @@ defmodule AxonInterp do
         end
         {_, predict_fn} = Axon.build(model, mode: :inference)
 
-        {:ok, %{model: model, params: params, path: nn_model, itempl: nn_inputs, otempl: nn_outputs}}
+        {:ok, %{model: predict_fn, params: params, path: nn_model, itempl: nn_inputs, otempl: nn_outputs}}
       end
 
       def session() do
@@ -119,9 +119,7 @@ defmodule AxonInterp do
             Enum.map(0..n-1, &inputs[&1]) |> List.to_tuple()
           end
 
-        {_, predict_fn} = Axon.build(model, mode: :inference)
-
-        results = case predict_fn.(params, inputs) do
+        results = case model.(params, inputs) do
           single when Nx.is_tensor(single) ->
             %{0 => single}
           multiple when is_tuple(multiple) ->
@@ -185,7 +183,7 @@ defmodule AxonInterp do
   defp validate_extname!(model) do
     actual_ext = Path.extname(model)
     unless actual_ext in @model_suffix,
-      do: raise ArgumentError, "expects the model file #{inspect(@model_suffix)} not \"#{actual_ext}\"."
+      do: raise ArgumentError, "#{@framework} expects the model file #{inspect(@model_suffix)} not \"#{actual_ext}\"."
 
     actual_ext
   end
