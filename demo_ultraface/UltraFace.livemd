@@ -30,6 +30,8 @@ defmodule UltraFace do
 
   use NNInterp,
     model: "./model/version-slim-320_simplified.onnx",
+    url:
+      "https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/raw/master/models/onnx/version-slim-320_simplified.onnx",
     inputs: [f32: {1, 3, @height, @width}],
     outputs: [f32: {1, 4420, 2}, f32: {1, 4420, 4}]
 
@@ -133,7 +135,7 @@ end
 ```
 
 ```elixir
-AxonInterp.stop(UltraFace)
+# AxonInterp.stop(UltraFace)
 UltraFace.start_link([])
 ```
 
