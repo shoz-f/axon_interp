@@ -30,10 +30,11 @@ defmodule AxonInterp.MixProject do
   defp deps do
     [
       {:nx, "~> 0.4.0"},
-      {:exla, "~> 0.4.0"},
+#      {:exla, "~> 0.4.0"},
       {:axon, "~> 0.3.0"},
       {:axon_onnx, "~> 0.3.0"},
       {:castore, "~> 0.1.19"},
+      {:progress_bar, "~> 2.0"},
 
       {:ex_doc, "~> 0.29.1", only: :dev, runtime: false}
     ]
